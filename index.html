@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SGC CAD | Charges Calculator</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#101826;
+      --panel2:#0f1724;
+      --text:#e6edf7;
+      --muted:#a7b4c7;
+      --border:rgba(255,255,255,.10);
+      --good:#2dd4bf;
+      --warn:#fbbf24;
+      --med:#fb923c;
+      --heavy:#ef4444;
+      --btn:#172338;
+      --btnHover:#1d2c46;
+      --chip:#0b1220;
+      --input:#0b1220;
+      --shadow: 0 10px 25px rgba(0,0,0,.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 10% 10%, #10223b 0%, var(--bg) 50%, #090c11 100%);
+      min-height:100vh;
+    }
+    header{
+      position:sticky;
+      top:0;
+      z-index:5;
+      backdrop-filter: blur(10px);
+      background: rgba(11,15,20,.75);
+      border-bottom: 1px solid var(--border);
+    }
+    .wrap{ max-width:1200px; margin:0 auto; padding:16px; }
+    h1{ margin:0; font-size:18px; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:12px; margin-top:4px; }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      padding:16px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns:1fr; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(16,24,38,.9), rgba(15,23,36,.85));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .cardHead h2{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .pillRow{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      color:var(--muted);
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      user-select:none;
+    }
+    .pill strong{ color:var(--text); font-weight:600; }
+    .body{ padding:14px; }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .search{
+      flex:1 1 260px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    input[type="text"], input[type="number"], select, textarea{
+      width:100%;
+      border-radius:12px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      background: var(--input);
+      color: var(--text);
+      outline:none;
+    }
+    input[type="number"]{ padding:8px 10px; border-radius:10px; }
+    select{ padding:9px 10px; }
+    textarea{
+      min-height:130px;
+      font-family: var(--mono);
+      font-size:12px;
+      line-height:1.35;
+      resize:vertical;
+    }
+
+    .btn{
+      border:1px solid var(--border);
+      background: var(--btn);
+      color: var(--text);
+      padding:9px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:.12s ease;
+      font-size:13px;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ background: var(--btnHover); }
+    .btn:active{ transform: translateY(1px); }
+
+    .chargeList{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (max-width: 680px){
+      .chargeList{ grid-template-columns:1fr; }
+    }
+    .chargeBtn{
+      text-align:left;
+      padding:12px;
+      border-radius:14px;
+      background: rgba(255,255,255,.04);
+      border:1px solid var(--border);
+      cursor:pointer;
+      transition:.12s ease;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .chargeBtn:hover{ background: rgba(255,255,255,.06); }
+    .chargeTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .code{
+      font-family: var(--mono);
+      font-size:12px;
+      color: var(--muted);
+    }
+    .name{
+      font-weight:700;
+      font-size:13px;
+      letter-spacing:.1px;
+    }
+    .desc{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+    .tags{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      margin-top:2px;
+    }
+    .tag{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid var(--border);
+      color: var(--muted);
+    }
+    .tag.warn{ color:#111827; background: rgba(251,191,36,.95); border-color: rgba(251,191,36,.30); }
+    .tag.light{ color:#111827; background: rgba(253,224,71,.92); border-color: rgba(253,224,71,.30); }
+    .tag.medium{ color:#111827; background: rgba(251,146,60,.92); border-color: rgba(251,146,60,.30); }
+    .tag.heavy{ color:#111827; background: rgba(239,68,68,.92); border-color: rgba(239,68,68,.30); }
+
+    .appliedItem{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius:14px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .row .left{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row .right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .small{ font-size:12px; color: var(--muted); }
+    .appliedTitle{
+      display:flex;
+      gap:10px;
+      align-items:baseline;
+      flex-wrap:wrap;
+    }
+    .appliedTitle .code{ font-size:12px; }
+    .appliedTitle .name{ font-size:14px; }
+
+    .danger{
+      border-color: rgba(239,68,68,.35);
+      background: rgba(239,68,68,.08);
+    }
+    .summaryBox{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .stat{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+    }
+    .stat .big{
+      font-size:20px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .muted{ color:var(--muted); }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SGC CAD | Charges + Time Calculator</h1>
+    <div class="sub">Click a charge to add it. Adjust warning vs infraction when allowed. Set minutes per charge and it totals everything.</div>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <div class="cardHead">
+      <div>
+        <h2>Charge Library</h2>
+        <div class="small">Click to add to Applied Charges</div>
+      </div>
+      <div class="pillRow">
+        <span class="pill"><strong>Max Jail</strong> Light 2, Medium 5, Heavy 10</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="toolbar">
+        <div class="search">
+          <input id="search" type="text" placeholder="Search by code, name, keyword..." />
+        </div>
+        <button class="btn" id="addAllPrimary">Add all Primary (1.x)</button>
+        <button class="btn" id="clearApplied">Clear Applied</button>
+      </div>
+      <div id="chargeList" class="chargeList"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="cardHead">
+      <div>
+        <h2>Applied Charges</h2>
+        <div class="small">Adjust severity when allowed, counts, and minutes</div>
+      </div>
+      <div class="pillRow">
+        <span class="pill"><strong>Total</strong> auto-calculated</span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="summaryBox">
+        <div class="stat">
+          <div>
+            <div class="muted">Total Jail Time</div>
+            <div class="big"><span id="totalMinutes">0</span> min</div>
+          </div>
+          <div class="pillRow">
+            <button class="btn" id="copySummary">Copy Charge Sheet</button>
+          </div>
+        </div>
+
+        <div id="appliedList"></div>
+
+        <div>
+          <div class="muted" style="margin-bottom:8px;">Charge Sheet (copy/paste)</div>
+          <textarea id="summaryText" readonly></textarea>
+          <div class="hint" style="margin-top:8px;">
+            Notes:
+            <br>- “Warning” counts as 0 minutes.
+            <br>- Minutes are clamped to the max for that severity (Light 2, Medium 5, Heavy 10).
+            <br>- Misconduct [1.3] and Resisting Arrest [1.5] stack up to 3 by default here (you can change count but it will clamp).
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  // Severity definitions
+  const SEVERITY = {
+    warning: { label: "Warning", max: 0 },
+    light:   { label: "Light",   max: 2 },
+    medium:  { label: "Medium",  max: 5 },
+    heavy:   { label: "Heavy",   max: 10 }
+  };
+
+  // Charge library
+  // allowedSeverities controls what you can select in the Applied list
+  // defaultSeverity is what it starts as when you add it
+  // maxStacks clamps the "Count" control if present
+  const CHARGES = [
+    // Primary 1.x
+    { code:"1.1",  name:"Uniform Regulations", severityTags:["warning","light"], allowedSeverities:["warning","light"], defaultSeverity:"warning",
+      summary:"Defines which uniforms/morphs may be worn when. Class-A formal, Class-B duty; CUSTOM suffix E-9C+; no A/B while conducting off-world duties.",
+      keywords:["uniform","class-a","class-b","morphs","custom","defcon","off-world"] },
+
+    { code:"1.1A", name:"Accessories", severityTags:["warning","light"], allowedSeverities:["warning","light"], defaultSeverity:"warning",
+      summary:"Accessories allowed only when morph permits; prohibited: overly large, sound-making, unrealistic, unprofessional.",
+      keywords:["accessories","morph","unprofessional","sound"] },
+
+    { code:"1.2",  name:"Neglect", severityTags:["warning","light"], allowedSeverities:["warning","light"], defaultSeverity:"warning",
+      summary:"Refusing or failing duties; includes OW authorization failures, OSI not enforcing UCMJ, MATCOM refusing control room/repairs, SF not arresting warranted, AFK outside spawn during OW invasion, refusing to defend base. Several void conditions apply by role/rank.",
+      keywords:["neglect","duties","authorize","off-worlder","afk","control room","repairs"] },
+
+    { code:"1.3",  name:"Misconduct", severityTags:["light"], allowedSeverities:["light"], defaultSeverity:"light", maxStacks:3,
+      summary:"Inappropriate behavior while representing SGC; harassment, abusing tools, random firearm discharge, annoying behavior. Stacks up to 3; up to 5 minutes per count (use Medium minutes input if you prefer, but severity is Light per card).",
+      keywords:["misconduct","harass","abuse","tools","annoying","firearm"] },
+
+    { code:"1.4",  name:"Insubordination", severityTags:["warning","light"], allowedSeverities:["warning","light"], defaultSeverity:"warning",
+      summary:"Refusing lawful orders from WO-1+; unlawful orders not required to follow and should be reported to OSI.",
+      keywords:["insubordination","orders","wo-1"] },
+
+    { code:"1.5",  name:"Evasion of Punishment (Resisting Arrest)", severityTags:["light"], allowedSeverities:["light"], defaultSeverity:"light", maxStacks:3,
+      summary:"Avoiding detainment or punishment by OSI/SF/commissioned; escaping cell adds on top of original charges; verbal refusal counts. Stacks up to 3.",
+      keywords:["resisting","arrest","escape","detain","evasion"] },
+
+    { code:"1.6",  name:"Obstruction of Operations", severityTags:["warning","medium"], allowedSeverities:["warning","medium"], defaultSeverity:"warning",
+      summary:"Attempting to or preventing personnel from duties; causing chaos that halts operations; starting outbreak; refusing R&D treatment.",
+      keywords:["obstruction","operations","chaos","outbreak","treatment","r&d"] },
+
+    { code:"1.7",  name:"Rules of Engagement", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Unlawfully discharging firearm at off-worlder with intent to harm. Includes Standard ROE (Earth) and Off-World ROE conditions.",
+      keywords:["roe","rules of engagement","lethal","off-worlder","hostile"] },
+
+    { code:"1.8",  name:"Turning a Weapon on a Friendly", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Turning any weapon/device at SGC personnel; firing/killing personnel; accidental infraction gets formal warning; exception for confirmed Code 9 when OSI not detaining.",
+      keywords:["friendly fire","weapon","code 9"] },
+
+    { code:"1.9",  name:"Unauthorized Gate Use", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Unauthorized travel through Stargate; dialing restricted to CCT, MATCOM, Officers; various divisions may go off-world; mass deployment or O-4+/Base Admin authorization allows broader travel.",
+      keywords:["gate","stargate","dial","matcom","cct","o-4","authorization"] },
+
+    { code:"1.10", name:"Destruction of SGC Property", severityTags:["warning","medium"], allowedSeverities:["warning","medium"], defaultSeverity:"warning",
+      summary:"Destroying SGC property (on-base/off-world): disruptors, control room glass, power boxes. Void if MATCOM repairing glass.",
+      keywords:["destruction","property","glass","power box","disruptor"] },
+
+    { code:"1.11", name:"Misuse of SGC Equipment", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Misusing equipment without authorization: turrets, alarms/camera scans, dialing computer rules. Some voids by O-6+ authorization. Must not impede Misconduct, Obstruction, Treason.",
+      keywords:["misuse","equipment","turret","alarms","camera scans","dialing computer","o-6"] },
+
+    { code:"1.12", name:"Impersonation", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Acting as another person or on behalf of a division/subdivision/person without explicit permission/consent.",
+      keywords:["impersonation","permission","consent"] },
+
+    { code:"1.13", name:"False Information", severityTags:["warning","medium"], allowedSeverities:["warning","medium"], defaultSeverity:"warning",
+      summary:"Lying or spreading false information. Includes falsely reporting someone for violating the UCMJ.",
+      keywords:["false","lying","reporting","ucmj"] },
+
+    { code:"1.14", name:"Instigation", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Encouraging or attempting to persuade someone to violate the UCMJ is strictly forbidden.",
+      keywords:["instigation","encourage","persuade"] },
+
+    { code:"1.15", name:"Obstruction of Justice", severityTags:["heavy"], allowedSeverities:["heavy"], defaultSeverity:"heavy",
+      summary:"Interfering with investigations or punishments; stopping/threatening/harassing reporting; interfering with active OSI investigation; obstruction of questioning.",
+      keywords:["obstruction of justice","investigation","witness","osi"] },
+
+    { code:"1.16", name:"Treason", severityTags:["heavy"], allowedSeverities:["heavy"], defaultSeverity:"heavy",
+      summary:"Aiding hostile parties or rogue SGC; sharing info/materials; aiding in combat; exploitation of classified materials; corruption (bribery, extortion, blackmail, abuse of power).",
+      keywords:["treason","classified","bribery","extortion","blackmail","hostiles"] },
+
+    // Secondary 2.x
+    { code:"2.1",  name:"Application Eligibility Act", severityTags:["light"], allowedSeverities:["light"], defaultSeverity:"light",
+      summary:"Application rules: E-2+ eligible; AI usage in applications leads to 3-day suspension and 1-month blacklist from all divisions.",
+      keywords:["application","eligibility","ai usage","blacklist","suspension"] },
+
+    { code:"2.2",  name:"Outbreak Policy", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"R&D may restrain uncooperative personnel and restrict areas during outbreaks. Entering during lockdown is trespassing.",
+      keywords:["outbreak","r&d","lockdown","restrain","trespassing"] },
+
+    { code:"2.3",  name:"Off-Worlder Rights", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Off-worlders may request OSI or Officer to report UCMJ violations; right to remain silent after exiting gate room; may be sent back through Stargate if silent.",
+      keywords:["rights","off-worlder","silent","gate room"] },
+
+    { code:"2.4",  name:"VIP Protection Act", severityTags:["warning","medium"], allowedSeverities:["warning","medium"], defaultSeverity:"warning",
+      summary:"OSI must follow VIP guard rules. Only VIP may request protection. Minimum 3 warnings before arrest while protecting VIP. VIPs: O-4+, POI, Foreign Rep. Lethal force only if VIP life in danger.",
+      keywords:["vip","protection","perimeter","warnings","osi","o-4","poi"] },
+
+    { code:"2.5",  name:"Obligation to Comply", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"SGC personnel must cooperate with OSI formal inquiry: accurate response, evidence, cooperation. Only OSI conducts formal inquiries. Suspects may remain silent. Officers held to higher standard.",
+      keywords:["comply","formal inquiry","evidence","cooperate","osi"] },
+
+    { code:"2.6",  name:"Right to Punishment Information", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
+      summary:"Right to request info about punishments; witnesses may request anonymity for valid reasons; OSI controls redaction and anonymity decisions.",
+      keywords:["punishment info","anonymity","witness","redaction"] },
+
+    // Locational 4.x
+    { code:"4.1",  name:"Trespassing", severityTags:["light"], allowedSeverities:["light"], defaultSeverity:"light",
+      summary:"Entering areas you lack clearance; allowing unauthorized access; Control Room loitering prohibited; void if authorized; O-4+ void for Control Room loitering; O-1+ may restrict access to areas they can access.",
+      keywords:["trespassing","clearance","control room","keycard","authorized","o-1","o-4"] },
+  ];
+
+  // Applied charges state
+  // Each item: { id, code, name, summary, severity, count, minutes }
+  const applied = [];
+
+  const chargeListEl = document.getElementById("chargeList");
+  const appliedListEl = document.getElementById("appliedList");
+  const totalMinutesEl = document.getElementById("totalMinutes");
+  const summaryTextEl = document.getElementById("summaryText");
+  const searchEl = document.getElementById("search");
+
+  function tagLabel(sev){
+    if(sev === "warning") return ["WARNING","warn"];
+    if(sev === "light") return ["LIGHT","light"];
+    if(sev === "medium") return ["MEDIUM","medium"];
+    if(sev === "heavy") return ["HEAVY","heavy"];
+    return [sev.toUpperCase(), ""];
+  }
+
+  function renderLibrary(){
+    const q = (searchEl.value || "").trim().toLowerCase();
+    const filtered = CHARGES.filter(c=>{
+      if(!q) return true;
+      const hay = [
+        c.code, c.name, c.summary,
+        ...(c.keywords||[]),
+        ...(c.severityTags||[])
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+
+    chargeListEl.innerHTML = "";
+    for(const c of filtered){
+      const btn = document.createElement("div");
+      btn.className = "chargeBtn";
+      btn.tabIndex = 0;
+
+      const top = document.createElement("div");
+      top.className = "chargeTop";
+
+      const left = document.createElement("div");
+      left.innerHTML = `<div class="name">${escapeHtml(c.name)}</div><div class="code">[${escapeHtml(c.code)}]</div>`;
+
+      const tags = document.createElement("div");
+      tags.className = "tags";
+      for(const sev of c.severityTags){
+        const [lbl, cls] = tagLabel(sev);
+        const t = document.createElement("span");
+        t.className = `tag ${cls}`;
+        t.textContent = lbl;
+        tags.appendChild(t);
+      }
+
+      top.appendChild(left);
+      top.appendChild(tags);
+
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = c.summary;
+
+      btn.appendChild(top);
+      btn.appendChild(desc);
+
+      btn.addEventListener("click", ()=> addCharge(c.code));
+      btn.addEventListener("keydown", (e)=>{
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault();
+          addCharge(c.code);
+        }
+      });
+
+      chargeListEl.appendChild(btn);
+    }
+  }
+
+  function addCharge(code){
+    const c = CHARGES.find(x=>x.code === code);
+    if(!c) return;
+
+    // allow duplicates, but add with unique id
+    const id = cryptoRandomId();
+    const severity = c.defaultSeverity || c.allowedSeverities[0] || "light";
+    const count = 1;
+
+    const minutes = severity === "warning" ? 0 : Math.min(SEVERITY[severity].max, SEVERITY[severity].max);
+
+    applied.push({
+      id,
+      code: c.code,
+      name: c.name,
+      summary: c.summary,
+      allowedSeverities: c.allowedSeverities.slice(),
+      maxStacks: c.maxStacks || null,
+      severity,
+      count,
+      minutes
+    });
+
+    renderApplied();
+  }
+
+  function removeApplied(id){
+    const idx = applied.findIndex(x=>x.id === id);
+    if(idx >= 0){
+      applied.splice(idx, 1);
+      renderApplied();
+    }
+  }
+
+  function clampCount(item){
+    if(item.maxStacks){
+      item.count = Math.max(1, Math.min(item.maxStacks, Number(item.count || 1)));
+    } else {
+      item.count = Math.max(1, Number(item.count || 1));
+    }
+  }
+
+  function clampMinutes(item){
+    const max = SEVERITY[item.severity].max;
+    if(item.severity === "warning"){
+      item.minutes = 0;
+      return;
+    }
+    const m = Number(item.minutes || 0);
+    item.minutes = Math.max(0, Math.min(max, m));
+  }
+
+  function computeTotalMinutes(){
+    let total = 0;
+    for(const item of applied){
+      const minutesPer = Number(item.minutes || 0);
+      const count = Number(item.count || 1);
+      total += minutesPer * count;
+    }
+    return total;
+  }
+
+  function buildSummaryText(){
+    if(applied.length === 0){
+      return "No charges applied.\n";
+    }
+
+    const lines = [];
+    lines.push("SGC CHARGE SHEET");
+    lines.push("---------------");
+
+    for(const item of applied){
+      const sevLabel = SEVERITY[item.severity].label.toUpperCase();
+      const max = SEVERITY[item.severity].max;
+      const countPart = item.count > 1 ? ` x${item.count}` : "";
+      const minutesPart = item.severity === "warning"
+        ? "0 min"
+        : `${item.minutes} min (max ${max})`;
+
+      lines.push(`[${item.code}] ${item.name}${countPart}`);
+      lines.push(`Severity: ${sevLabel} | Time: ${minutesPart}`);
+      lines.push(`Notes: ${item.summary}`);
+      lines.push("");
+    }
+
+    lines.push(`TOTAL JAIL TIME: ${computeTotalMinutes()} min`);
+    return lines.join("\n");
+  }
+
+  function renderApplied(){
+    appliedListEl.innerHTML = "";
+
+    for(const item of applied){
+      clampCount(item);
+      clampMinutes(item);
+
+      const wrap = document.createElement("div");
+      wrap.className = "appliedItem";
+
+      const topRow = document.createElement("div");
+      topRow.className = "row";
+
+      const title = document.createElement("div");
+      title.className = "appliedTitle";
+      title.innerHTML = `<span class="code">[${escapeHtml(item.code)}]</span> <span class="name">${escapeHtml(item.name)}</span>`;
+
+      const right = document.createElement("div");
+      right.className = "right";
+
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "btn";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", ()=> removeApplied(item.id));
+
+      right.appendChild(removeBtn);
+      topRow.appendChild(title);
+      topRow.appendChild(right);
+
+      const midRow = document.createElement("div");
+      midRow.className = "row";
+
+      const leftControls = document.createElement("div");
+      leftControls.className = "left";
+
+      // Severity selector
+      const sevWrap = document.createElement("div");
+      sevWrap.style.minWidth = "180px";
+      const sevSel = document.createElement("select");
+      for(const s of item.allowedSeverities){
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = SEVERITY[s].label;
+        sevSel.appendChild(opt);
+      }
+      sevSel.value = item.severity;
+      sevSel.addEventListener("change", ()=>{
+        item.severity = sevSel.value;
+        // Auto set minutes if warning, otherwise default to max for the severity
+        if(item.severity === "warning"){
+          item.minutes = 0;
+        } else {
+          item.minutes = Math.min(SEVERITY[item.severity].max, Math.max(0, Number(item.minutes || SEVERITY[item.severity].max)));
+        }
+        renderApplied();
+      });
+      sevWrap.appendChild(labelEl("Severity"));
+      sevWrap.appendChild(sevSel);
+
+      // Count selector
+      const countWrap = document.createElement("div");
+      countWrap.style.width = "120px";
+      const countIn = document.createElement("input");
+      countIn.type = "number";
+      countIn.min = "1";
+      countIn.step = "1";
+      countIn.value = item.count;
+      if(item.maxStacks){
+        countIn.max = String(item.maxStacks);
+      }
+      countIn.addEventListener("input", ()=>{
+        item.count = countIn.value;
+        renderApplied();
+      });
+      countWrap.appendChild(labelEl(item.maxStacks ? `Count (max ${item.maxStacks})` : "Count"));
+      countWrap.appendChild(countIn);
+
+      // Minutes input
+      const minWrap = document.createElement("div");
+      minWrap.style.width = "180px";
+      const minIn = document.createElement("input");
+      minIn.type = "number";
+      minIn.min = "0";
+      minIn.step = "1";
+      minIn.value = item.minutes;
+      minIn.disabled = (item.severity === "warning");
+      minIn.addEventListener("input", ()=>{
+        item.minutes = minIn.value;
+        renderApplied();
+      });
+      const maxFor = SEVERITY[item.severity].max;
+      minWrap.appendChild(labelEl(item.severity === "warning" ? "Minutes (warning = 0)" : `Minutes (max ${maxFor})`));
+      minWrap.appendChild(minIn);
+
+      leftControls.appendChild(sevWrap);
+      leftControls.appendChild(countWrap);
+      leftControls.appendChild(minWrap);
+
+      midRow.appendChild(leftControls);
+
+      const desc = document.createElement("div");
+      desc.className = "small";
+      desc.textContent = item.summary;
+
+      wrap.appendChild(topRow);
+      wrap.appendChild(midRow);
+      wrap.appendChild(desc);
+
+      appliedListEl.appendChild(wrap);
+    }
+
+    const total = computeTotalMinutes();
+    totalMinutesEl.textContent = String(total);
+    summaryTextEl.value = buildSummaryText();
+  }
+
+  function labelEl(text){
+    const d = document.createElement("div");
+    d.className = "small";
+    d.style.marginBottom = "6px";
+    d.textContent = text;
+    return d;
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function cryptoRandomId(){
+    if(window.crypto && crypto.getRandomValues){
+      const a = new Uint32Array(2);
+      crypto.getRandomValues(a);
+      return `${a[0].toString(16)}-${a[1].toString(16)}`;
+    }
+    return String(Date.now()) + "-" + Math.random().toString(16).slice(2);
+  }
+
+  // Actions
+  document.getElementById("clearApplied").addEventListener("click", ()=>{
+    applied.length = 0;
+    renderApplied();
+  });
+
+  document.getElementById("addAllPrimary").addEventListener("click", ()=>{
+    const primary = CHARGES.filter(c=> String(c.code).startsWith("1."));
+    for(const c of primary) addCharge(c.code);
+  });
+
+  document.getElementById("copySummary").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(summaryTextEl.value);
+      alert("Charge sheet copied.");
+    }catch{
+      // fallback
+      summaryTextEl.focus();
+      summaryTextEl.select();
+      document.execCommand("copy");
+      alert("Charge sheet copied.");
+    }
+  });
+
+  searchEl.addEventListener("input", renderLibrary);
+
+  // Initial render
+  renderLibrary();
+  renderApplied();
+</script>
+</body>
+</html>
