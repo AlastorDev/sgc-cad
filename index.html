@@ -261,11 +261,34 @@
       color:var(--muted);
       line-height:1.4;
     }
+    .headerGlass{
+      width:100%;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      margin:0 0 12px 0;
+      padding:10px;
+      border-radius:16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+    .headerGlass img{
+      max-width:460px;
+      width:100%;
+      height:auto;
+      border-radius:10px;
+      display:block;
+    }
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
+    <div class="headerGlass">
+      <img src="https://lh7-rt.googleusercontent.com/formsz/AN7BsVAWtMAGgwRcQ0PvqOEe_pVEB_x4_E96xPS_b4rLzNbzw2Ndo2XNuWNaGE30H3ghG2sjaRuoKKPzhHTzGFCp5SHG4S2u2ienH-Z3ns9BMV5VOIJjRz8WnHcktxBplj0TILPvt14Rg-G73dYI7Bzf2To7vP6_SF3LWhgNlsneFTfYGN9ZrMXU6j7nUK2FeDpkrId7sI34AHFlcdst=w2610?key=ve3jfX_g8_1ahXJkl5jRrw" alt="SGC Header" />
+    </div>
     <h1>SGC CAD | Charges + Time Calculator</h1>
     <div class="sub">Click a charge to add it. Adjust warning vs infraction when allowed. Set minutes per charge and it totals everything.</div>
   </div>
@@ -321,6 +344,13 @@
         <div>
           <div class="muted" style="margin-bottom:8px;">Charge Sheet (copy/paste)</div>
           <textarea id="summaryText" readonly></textarea>
+          <div style="margin-top:14px;">
+            <div class="muted" style="margin-bottom:8px;">Arrest Line (copy/paste)</div>
+            <textarea id="arrestLineText" readonly></textarea>
+            <div class="pillRow" style="margin-top:8px;">
+              <button class="btn" id="copyArrestLine">Copy Arrest Line</button>
+            </div>
+          </div>
           <div class="hint" style="margin-top:8px;">
             Notes:
             <br>- “Warning” counts as 0 minutes.
@@ -388,7 +418,7 @@
       summary:"Unauthorized travel through Stargate; dialing restricted to CCT, MATCOM, Officers; various divisions may go off-world; mass deployment or O-4+/Base Admin authorization allows broader travel.",
       keywords:["gate","stargate","dial","matcom","cct","o-4","authorization"] },
 
-    { code:"1.10", name:"Destruction of SGC Property", severityTags:["warning","medium"], allowedSeverities:["warning","medium"], defaultSeverity:"warning",
+    { code:"1.10", name:"Destruction of SGC Property", severityTags:["medium"], allowedSeverities:["medium"], defaultSeverity:"medium",
       summary:"Destroying SGC property (on-base/off-world): disruptors, control room glass, power boxes. Void if MATCOM repairing glass.",
       keywords:["destruction","property","glass","power box","disruptor"] },
 
@@ -455,6 +485,7 @@
   const appliedListEl = document.getElementById("appliedList");
   const totalMinutesEl = document.getElementById("totalMinutes");
   const summaryTextEl = document.getElementById("summaryText");
+  const arrestLineTextEl = document.getElementById("arrestLineText");
   const searchEl = document.getElementById("search");
 
   function tagLabel(sev){
@@ -610,6 +641,48 @@
     return lines.join("\n");
   }
 
+  function buildArrestLine(){
+    if(applied.length === 0){
+      return "No charges applied.";
+    }
+
+    const names = applied.map(i => i.name);
+
+    // Robust total calculation (clamps per-item here so the line stays correct even before render/clamp runs)
+    let total = 0;
+    for(const item of applied){
+      const sev = item.severity || "light";
+      const count = Number(item.count || 1);
+
+      let minutesPer = Number(item.minutes || 0);
+      if(sev === "warning"){
+        minutesPer = 0;
+      } else if(SEVERITY[sev]){
+        minutesPer = Math.max(0, Math.min(SEVERITY[sev].max, minutesPer));
+      } else {
+        minutesPer = Math.max(0, minutesPer);
+      }
+
+      total += minutesPer * count;
+    }
+
+    let nameText = "";
+    if(names.length === 1){
+      nameText = names[0];
+    } else if(names.length === 2){
+      nameText = names[0] + " and " + names[1];
+    } else {
+      nameText = names.slice(0, -1).join(", ") + ", and " + names[names.length - 1];
+    }
+
+    // If there is no jail time at all, output a warning line instead of an arrest line.
+    if(total <= 0){
+      return `You are being warned for violations of ${nameText}.`;
+    }
+
+    return `You are under arrest for violations of ${nameText} and will be sent to prison for ${total} minutes.`;
+  }
+
   function renderApplied(){
     appliedListEl.innerHTML = "";
 
@@ -724,6 +797,7 @@
     const total = computeTotalMinutes();
     totalMinutesEl.textContent = String(total);
     summaryTextEl.value = buildSummaryText();
+    if(arrestLineTextEl){ arrestLineTextEl.value = buildArrestLine(); }
   }
 
   function labelEl(text){
@@ -773,6 +847,21 @@
       summaryTextEl.select();
       document.execCommand("copy");
       alert("Charge sheet copied.");
+    }
+  });
+
+  document.getElementById("copyArrestLine").addEventListener("click", async ()=>{
+    try{
+      await navigator.clipboard.writeText(arrestLineTextEl ? arrestLineTextEl.value : "");
+      alert("Arrest line copied.");
+    }catch{
+      // fallback
+      if(arrestLineTextEl){
+        arrestLineTextEl.focus();
+        arrestLineTextEl.select();
+        document.execCommand("copy");
+      }
+      alert("Arrest line copied.");
     }
   });
 
